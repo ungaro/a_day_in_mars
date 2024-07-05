@@ -72,8 +72,9 @@ sink.sleep_until_end();
     struct GameState {
         is_ready: bool,
         screen: Screen,
-
+        rocket: Rocket,
         tick: u32,
+        is_launching: bool,
         planets: Vec<Planet>
     
     } = {
@@ -87,16 +88,17 @@ impl GameState {
 
     pub fn new() -> Self {
         let [screen_w, screen_h] = resolution();
+        //Rocket::new();
 
 //    pub  fn new(x: f64, y: f64, radius: f64, color: u32, mass: f64) -> Self {
 
 
-        let mut sun = Planet::new(0.0, 0.0, 30.0, 0x00FF_FF00, 1.98892_f64 * 10.0_f64.powi(30));
+        let mut sun = Planet::new(0.0, 0.0, 100.0, 0x00FF_FF00, 1.98892_f64 * 10.0_f64.powi(30));
         sun.sun = true;
         let mut earth = Planet::new(
             -1.0 * AU,
             0.0,
-            16.0,
+            160.0,
             0x0064_95ED,
 //            5.9742_f64 * 10.0_f64.powi(24),
             5.9742_f64 * 10.0_f64.powi(24),
@@ -105,7 +107,7 @@ impl GameState {
         let mut mars = Planet::new(
             -1.524 * AU,
             0.0,
-            12.0,
+            120.0,
             0x00BC_2732,
             6.39_f64 * 10.0_f64.powi(23),
         );
@@ -113,7 +115,7 @@ impl GameState {
         let mut mercury = Planet::new(
             0.387 * AU,
             0.0,
-            8.0,
+            80.0,
             0x0050_4E51,
             3.30_f64 * 10.0_f64.powi(23),
         );
@@ -121,7 +123,7 @@ impl GameState {
         let mut venus = Planet::new(
             0.723 * AU,
             0.0,
-            14.0,
+            140.0,
             0x00FF_FFFF,
             4.8685_f64 * 10.0_f64.powi(24),
         );
@@ -129,13 +131,15 @@ impl GameState {
 
         let mut planets = vec![sun, earth, mars, mercury, venus];
 //        let mut planets = vec![sun, earth];
-
+let mut rocket = Rocket::new();
         Self {
             // Initialize all fields with default values
             tick: 0,
             is_ready: false,
+            is_launching:false,
             planets: planets,
             screen: Screen::Title,
+            rocket:rocket,
 
          
         }
@@ -187,7 +191,9 @@ turbo::go! {
 fn draw_game_screen(state: &GameState){
            // Make a clone of the current state of planets for reading
        //DRAWING
-  
+
+
+
 }
 
 
@@ -195,6 +201,7 @@ fn draw_game_screen(state: &GameState){
 fn update_game_screen(state: &mut GameState){
     // Make a clone of the current state of planets for reading
     let planets_clone = state.planets.clone();
+    let rocket_clone = state.rocket.clone();
 
     // Iterate over planets with indices
     for (i, planet) in state.planets.iter_mut().enumerate() {
@@ -204,6 +211,23 @@ fn update_game_screen(state: &mut GameState){
         // Update the position of the current planet
         planet.update_position(&others);
     }
+
+    //rocket_clone.update_position();
+    rocket_clone.draw();
+
+let gp = gamepad(0);
+
+
+
+
+// Checks if the A button is JustPressed
+if gp.start.pressed() {
+    // Handle JustPressed state
+    state.rocket.is_launching = true;
+}
+
+state.rocket.update(&state.planets.earth, 0.016); // As
+
 
 
     for planet in &state.planets {
