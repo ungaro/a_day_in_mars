@@ -5,59 +5,61 @@ use serde::{Deserialize, Serialize};
 use serde_json::Result;
 use borsh::{BorshDeserialize, BorshSerialize};
 use turbo::prelude::*;
-use std::f32::consts::PI;
+use std::f64::consts::PI;
 
-
+use crate::planet::Planet;
+use crate::{G, SOFTENING_FACTOR, AU, SCALE, TIMESTEP};
 
 // Constants
-const GRAVITY: f32 = 9.8;
-const LAUNCH_POWER_INCREASE: f32 = 0.1;
-const MAX_LAUNCH_POWER: f32 = 10.0;
-const PLANET_RADIUS: f32 = 50.0;
+const GRAVITY: f64 = 9.8;
+const LAUNCH_POWER_INCREASE: f64 = 1_000_000.0;
+const MAX_LAUNCH_POWER: f64 = 100_000_000.0;
+const PLANET_RADIUS: f64 = 50.0;
+// width and height, duh
+const WIDTH: usize = 1920;
+const HEIGHT: usize = 1080;
 
-#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize,Serialize,Deserialize)]
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 pub struct Rocket {
     name: String,
     manufacturer: String,
-    height: f32,
-    diameter: f32,
-    mass: f32,
-    thrust: f32,
-    fuel_capacity: f32,
-    max_speed: f32,
-    max_altitude: f32,
+    height: f64,
+    diameter: f64,
+    mass: f64,
+    thrust: f64,
+    fuel_capacity: f64,
+    max_speed: f64,
+    max_altitude: f64,
     stages: u8,
-    payload_capacity: f32,
-    reliability: f32,
+    payload_capacity: f64,
+    reliability: f64,
     cost: u64,
     cooldown_time: u32,
     price: u64,
     image: String,
     construction_speed: u32,
-    pub is_launching:bool,
-    launch_power: f32,
-    x: f32,
-    y: f32,
-    velocity_x: f32,
-    velocity_y: f32,
-    rotation: f32,
-
+    pub is_launching: bool,
+    pub x: f64,
+    pub y: f64,
+    pub velocity_x: f64,
+    pub velocity_y: f64,
+    pub rotation: f64,
+    launch_power: f64,
 }
 
 impl Rocket {
-    fn thrust_to_weight_ratio(&self) -> f32 {
-        const GRAVITY: f32 = 9.81;  // m/s^2
+    fn thrust_to_weight_ratio(&self) -> f64 {
+        const GRAVITY: f64 = 9.81;
         self.thrust / (self.mass * GRAVITY)
     }
 
     pub fn new() -> Self {
-
         Self {
-            name:"Falcon 9".to_string(),
+            name: "Falcon 9".to_string(),
             manufacturer: "SpaceX".to_string(),
             height: 70.0,
             diameter: 3.7,
-            mass: 549054.0,
+            mass: 5490.54,
             thrust: 7607000.0,
             fuel_capacity: 287400.0,
             max_speed: 7500.0,
@@ -70,59 +72,134 @@ impl Rocket {
             price: 67000000,
             image: "falcon9.png".to_string(),
             construction_speed: 180,
-            x:0.0,
-            y:0.0,
+            x: -1.0 * AU / 1000.0, // Closer to origin
+            y: 6371000.0,
             velocity_x: 0.0,
             velocity_y: 0.0,
             rotation: 0.0,
             launch_power: 0.0,
             is_launching: false,
-
         }
-
-
     }
 
+    pub fn draw(&self, scale: f64) {
+/*
+        let [canvas_width, canvas_height] = canvas_size!();
+    
+        let adjusted_scale = scale * 1e-3; // Increased from 1e-5
+        
+        let screen_x = ((self.x * adjusted_scale) + (canvas_width as f64 / 2.0)) as i32;
+        let screen_y = ((self.y * adjusted_scale) + (canvas_height as f64 / 2.0)) as i32;
+    
 
-    pub fn update(&mut self, planet: &Planet, delta_time: f32) {
+      //  let screen_x = screen_x.clamp(0, canvas_width as i32 - 1);
+      //  let screen_y = screen_y.clamp(0, canvas_height as i32 - 1);
+
+        
+*/
+let rotation_degrees = (self.rotation * 180.0 / PI) as i32;
+        log!("Screen position: ({}, {})", self.x, self.y);
+
+        sprite!(
+            "falcon9",
+            x = self.x,
+            y = self.y,
+            w = 64,
+            h = 128,
+            color = 0xFFFFFFFF,
+            opacity = 1.0,
+            rotate = rotation_degrees,
+            scale_x = 0.5,
+            scale_y = 0.5,
+            flip_x = false,
+            flip_y = false,
+            fps = 0,
+        );
+    }
+
+    pub fn set_position(&mut self, x: f64, y: f64) {
+        self.x = x;
+        self.y = y;
+    }
+
+    pub fn set_velocity(&mut self, x: f64, y: f64) {
+        self.velocity_x = x;
+        self.velocity_y = y;
+        }
+
+    pub fn update_position(&mut self) {
+        self.x += self.velocity_x;
+        self.y += self.velocity_y;
+    }
+
+// rockets.rs - apply_gravity method
+
+pub fn apply_gravity(&mut self, planet:Planet) {
+    let dx = planet.x - self.x;
+    let dy = planet.y - self.y;
+    let distance = (dx * dx + dy * dy).sqrt();
+
+    // Avoid division by zero
+    if distance == 0.0 {
+        return;
+    }
+
+    // Normalize the direction vector
+    let direction = (dx / distance, dy / distance);
+
+    // Apply gravitational force with a stronger effect
+    let gravity_effect = planet.gravity / (distance * distance); // Inverse-square law for gravity
+    self.velocity_x += direction.0 * gravity_effect;
+    self.velocity_y += direction.1 * gravity_effect;
+}
+
+
+    pub fn update(&mut self, planets: &[Planet], delta_time: f64) {
         if self.is_launching {
             self.launch_power += LAUNCH_POWER_INCREASE;
             self.launch_power = self.launch_power.min(MAX_LAUNCH_POWER);
-        } else if self.launch_power > 0.0 {
-            self.velocity_x = self.launch_power * self.rotation.cos();
-            self.velocity_y = self.launch_power * self.rotation.sin();
-            self.launch_power = 0.0;
+            
+            let launch_angle = std::f64::consts::PI / 4.0; // 45 degrees
+            let acceleration = self.launch_power / self.mass * 1000.0; // Multiply by 1000 for more noticeable effect
+            self.velocity_x += acceleration * launch_angle.cos() * delta_time;
+            self.velocity_y += acceleration * launch_angle.sin() * delta_time;
+            
+            //log!("Launch power: {}", self.launch_power);
+            //log!("Acceleration: {}", acceleration);
         }
 
-        let dx = planet.x - self.x;
-        let dy = planet.y - self.y;
+        let sun = planets.iter().find(|p| p.sun).unwrap();
+        let dx = sun.x - self.x;
+        let dy = sun.y - self.y;
         let distance = (dx * dx + dy * dy).sqrt();
+        let force = G * sun.mass / (distance * distance);
+        let angle = dy.atan2(dx);
         
-        let gravity_force = GRAVITY / (distance * distance);
-        self.velocity_x += gravity_force * dx / distance * delta_time;
-        self.velocity_y += gravity_force * dy / distance * delta_time;
+        self.velocity_x += force * angle.cos() * delta_time;
+        self.velocity_y += force * angle.sin() * delta_time;
+
+        log!("velocity_x: ({}, {})", self.velocity_x, self.velocity_y);
+
+
 
         self.x += self.velocity_x * delta_time;
         self.y += self.velocity_y * delta_time;
 
+        log!("Position before mul: ({}, {})", self.x, self.y);
+
+        self.x = self.x.mul_add(SCALE, WIDTH as f64 / 2.0) / 10_000_000.0;
+        self.y = self.y.mul_add(SCALE, HEIGHT as f64 / 2.0) / 10_000_000.0;
+
+
+
         self.rotation = self.velocity_y.atan2(self.velocity_x);
+
+        log!("Position: ({}, {})", self.x, self.y);
+        //log!("Velocity: ({}, {})", self.velocity_x, self.velocity_y);
     }
-
-
-    pub fn draw(&self) {
-        let [canvas_width, canvas_height] = canvas_size!();
-
-
-        //log!("ROCKET_DRAW_CALLED");
-        sprite!("falcon9", x = canvas_width/2, y = canvas_height/2, fps = fps::FAST);
-
-
-    }
-
-
 }
 
-#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize,Serialize,Deserialize)]
+#[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 struct RocketData {
     rockets: Vec<Rocket>,
 }
@@ -144,18 +221,5 @@ fn load_rockets_from_json(file_path: &str) -> Result<HashMap<String, Rocket>> {
 
 pub fn list_rockets() -> Result<()> {
     let rockets = load_rockets_from_json("./data/rockets.json")?;
-    /*
-    for (name, rocket) in rockets.iter() {
-        println!("Rocket: {}", name);
-        println!("Manufacturer: {}", rocket.manufacturer);
-        println!("Height: {} m", rocket.height);
-        println!("Payload capacity: {} kg", rocket.payload_capacity);
-        println!("Price: ${}", rocket.price);
-        println!("Construction time: {} days", rocket.construction_speed);
-        println!("Thrust-to-Weight Ratio: {:.2}", rocket.thrust_to_weight_ratio());
-        println!("---");
-    }
-    */
-
     Ok(())
 }

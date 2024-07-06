@@ -33,18 +33,24 @@ pub struct Planet {
     radius: f64,            // radius of the planet
     color: u32,             // color code for visualization
     sprite: String,
-    mass: f64,              // mass of the planet
+    pub mass: f64,              // mass of the planet
     pub orbit: Vec<(f64, f64)>, // list of orbital coordinates for visualization
     pub sun: bool,              // indicates whether the planet represents the sun
     pub distance_to_sun: f64,   // distance from the planet to the sun
     pub x_vel: f64,             // velocity of the planet along the x-axis
-    pub y_vel: f64,             // velocity of the planet along the y-axis
+    pub y_vel: f64,  
+    pub gravity: f64
+    
+               // velocity of the planet along the y-axis
 }
 
 impl Planet {
     // create a new planet with the given properties
 
-
+    pub fn is_within_gravity_range(&self, rocket_position: (f64, f64)) -> bool {
+        let distance = ((rocket_position.0 - self.x).powi(2) + (rocket_position.1 - self.y).powi(2)).sqrt();
+        distance < 100.0
+    }
 
     pub  fn new(x: f64, y: f64, radius: f64, color: u32, mass: f64) -> Self {
         Self {
@@ -59,6 +65,8 @@ impl Planet {
             x_vel: 0.0,
             y_vel: 0.0,
             sprite: "PLANET".to_string(),
+             gravity: 9.8,
+
         }
     }
 
@@ -102,7 +110,10 @@ impl Planet {
     // keep the orbit path up to date with the planet's current position
     fn update_orbit_points(&self) {
         // calculate and update the visual orbit path
-        let updated_points: Vec<(usize, usize)> = self
+        for (i, (x, y)) in self.orbit.iter().enumerate() {
+            //log!("ORBIT point {}: {} {}", i, x, y);
+        }
+                let updated_points: Vec<(usize, usize)> = self
             .orbit
             .iter()
             .map(|&(x, y)| {
@@ -115,7 +126,7 @@ impl Planet {
 
         // draw lines connecting the updated orbit points
         for window in updated_points.windows(2) {
-
+//log!("POINTS {} {}",window[0].0, window[0].1);
             path!(
                 start= (window[0].0, window[0].1),
                 end= (window[1].0, window[1].1),
