@@ -82,6 +82,10 @@ impl Rocket {
         }
     }
 
+
+
+
+
     pub fn draw(&self, scale: f64) {
 /*
         let [canvas_width, canvas_height] = canvas_size!();
@@ -98,7 +102,7 @@ impl Rocket {
         
 */
 let rotation_degrees = (self.rotation * 180.0 / PI) as i32;
-        log!("Screen position: ({}, {})", self.x, self.y);
+        //log!("Screen position: ({}, {})", self.x, self.y);
 
         sprite!(
             "falcon9",
@@ -117,6 +121,9 @@ let rotation_degrees = (self.rotation * 180.0 / PI) as i32;
         );
     }
 
+
+
+
     pub fn set_position(&mut self, x: f64, y: f64) {
         self.x = x;
         self.y = y;
@@ -132,7 +139,6 @@ let rotation_degrees = (self.rotation * 180.0 / PI) as i32;
         self.y += self.velocity_y;
     }
 
-// rockets.rs - apply_gravity method
 
 pub fn apply_gravity(&mut self, planet:Planet) {
     let dx = planet.x - self.x;
@@ -154,6 +160,7 @@ pub fn apply_gravity(&mut self, planet:Planet) {
 }
 
 
+
     pub fn update(&mut self, planets: &[Planet], delta_time: f64) {
         if self.is_launching {
             self.launch_power += LAUNCH_POWER_INCREASE;
@@ -164,8 +171,7 @@ pub fn apply_gravity(&mut self, planet:Planet) {
             self.velocity_x += acceleration * launch_angle.cos() * delta_time;
             self.velocity_y += acceleration * launch_angle.sin() * delta_time;
             
-            //log!("Launch power: {}", self.launch_power);
-            //log!("Acceleration: {}", acceleration);
+  
         }
 
         let sun = planets.iter().find(|p| p.sun).unwrap();
@@ -175,17 +181,15 @@ pub fn apply_gravity(&mut self, planet:Planet) {
         let force = G * sun.mass / (distance * distance);
         let angle = dy.atan2(dx);
         
-        self.velocity_x += force * angle.cos() * delta_time;
-        self.velocity_y += force * angle.sin() * delta_time;
+        self.velocity_x += force * angle.cos() * delta_time / 10_000_000.0;;
+        self.velocity_y += force * angle.sin() * delta_time / 10_000_000.0;;
 
-        log!("velocity_x: ({}, {})", self.velocity_x, self.velocity_y);
 
 
 
         self.x += self.velocity_x * delta_time;
         self.y += self.velocity_y * delta_time;
 
-        log!("Position before mul: ({}, {})", self.x, self.y);
 
         self.x = self.x.mul_add(SCALE, WIDTH as f64 / 2.0) / 10_000_000.0;
         self.y = self.y.mul_add(SCALE, HEIGHT as f64 / 2.0) / 10_000_000.0;
@@ -195,8 +199,9 @@ pub fn apply_gravity(&mut self, planet:Planet) {
         self.rotation = self.velocity_y.atan2(self.velocity_x);
 
         log!("Position: ({}, {})", self.x, self.y);
-        //log!("Velocity: ({}, {})", self.velocity_x, self.velocity_y);
+        log!("Velocity: ({}, {})", self.velocity_x, self.velocity_y);
     }
+ 
 }
 
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize, Serialize, Deserialize)]

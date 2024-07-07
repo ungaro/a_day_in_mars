@@ -26,6 +26,9 @@ const SCALE: f64 = 250.0 / AU;
 // time step for the simulation in seconds (1 day in this case)
 const TIMESTEP: f64 = 3600.0 * 24.0;
 
+
+
+
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize)]
 pub struct Planet {
     pub x: f64,                 // x-coordinate of the planet's position
@@ -147,6 +150,9 @@ impl Planet {
         }
     }
 
+
+    
+
     // update the planet's position and velocity due to gravitational forces
     pub fn update_position(&mut self, planets: &[Self]) {
         //log!("Before Update: x = {}, y = {}, x_vel = {}, y_vel = {}", self.x, self.y, self.x_vel, self.y_vel);
@@ -224,6 +230,10 @@ impl Planet {
         // return force components and distance
         (force_x, force_y, distance)
     }
+
+
+
+
 }
 
 
