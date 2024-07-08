@@ -12,8 +12,8 @@ use crate::{G, SOFTENING_FACTOR, AU, SCALE, TIMESTEP};
 
 // Constants
 const GRAVITY: f64 = 9.8;
-const LAUNCH_POWER_INCREASE: f64 = 1_000_000.0;
-const MAX_LAUNCH_POWER: f64 = 100_000_000.0;
+const LAUNCH_POWER_INCREASE: f64 = 1.0;
+const MAX_LAUNCH_POWER: f64 = 1.0;
 const PLANET_RADIUS: f64 = 50.0;
 // width and height, duh
 const WIDTH: usize = 1920;
@@ -72,8 +72,8 @@ impl Rocket {
             price: 67000000,
             image: "falcon9.png".to_string(),
             construction_speed: 180,
-            x: -1.0 * AU / 1000.0, // Closer to origin
-            y: 6371000.0,
+            x: 500.0, // Closer to origin
+            y: 500.0,
             velocity_x: 0.0,
             velocity_y: 0.0,
             rotation: 0.0,
@@ -162,44 +162,50 @@ pub fn apply_gravity(&mut self, planet:Planet) {
 
 
     pub fn update(&mut self, planets: &[Planet], delta_time: f64) {
+      
         if self.is_launching {
             self.launch_power += LAUNCH_POWER_INCREASE;
             self.launch_power = self.launch_power.min(MAX_LAUNCH_POWER);
             
             let launch_angle = std::f64::consts::PI / 4.0; // 45 degrees
-            let acceleration = self.launch_power / self.mass * 1000.0; // Multiply by 1000 for more noticeable effect
+            let acceleration = self.launch_power / self.mass; // Multiply by 1000 for more noticeable effect
             self.velocity_x += acceleration * launch_angle.cos() * delta_time;
             self.velocity_y += acceleration * launch_angle.sin() * delta_time;
+
             
-  
+            let sun = planets.iter().find(|p| p.sun).unwrap();
+            //let earth = planets.iter().find(|p| p.earth).unwrap();
+            //self.apply_gravity(earth.clone());
+
+            let dx = sun.x - self.x;
+            let dy = sun.y - self.y;
+            let distance = (dx * dx + dy * dy).sqrt();
+            let force = G * sun.mass / (distance * distance);
+            let angle = dy.atan2(dx);
+            
+            //self.velocity_x += force * angle.cos() * delta_time / 1_000_000.0;;
+            //self.velocity_y += force * angle.sin() * delta_time / 1_000_000.0;;
+    
+    
+    
+    
+            //self.x += self.velocity_x * delta_time;
+            self.y -= self.velocity_y * delta_time * 1000.0;
+            log!("CALC: ({}, {}, {})", self.velocity_y, delta_time, self.y);
+
+    
+            self.x = self.x.mul_add(SCALE, WIDTH as f64 / 2.0);
+            self.y = self.y.mul_add(SCALE, HEIGHT as f64 / 2.0);
+    
+    
+            self.rotation = self.velocity_y.atan2(self.velocity_x);
         }
 
-        let sun = planets.iter().find(|p| p.sun).unwrap();
-        let dx = sun.x - self.x;
-        let dy = sun.y - self.y;
-        let distance = (dx * dx + dy * dy).sqrt();
-        let force = G * sun.mass / (distance * distance);
-        let angle = dy.atan2(dx);
-        
-        self.velocity_x += force * angle.cos() * delta_time / 10_000_000.0;;
-        self.velocity_y += force * angle.sin() * delta_time / 10_000_000.0;;
-
-
-
-
-        self.x += self.velocity_x * delta_time;
-        self.y += self.velocity_y * delta_time;
-
-
-        self.x = self.x.mul_add(SCALE, WIDTH as f64 / 2.0) / 10_000_000.0;
-        self.y = self.y.mul_add(SCALE, HEIGHT as f64 / 2.0) / 10_000_000.0;
-
-
-
-        self.rotation = self.velocity_y.atan2(self.velocity_x);
+    
 
         log!("Position: ({}, {})", self.x, self.y);
         log!("Velocity: ({}, {})", self.velocity_x, self.velocity_y);
+       
     }
  
 }

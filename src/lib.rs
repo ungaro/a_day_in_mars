@@ -187,7 +187,6 @@ fn draw_game_screen(state: &GameState) {
 fn update_game_screen(state: &mut GameState) {
     // Make a clone of the current state of planets for reading
     let planets_clone = state.planets.clone();
-    //let rocket_clone = state.rocket.clone();
 
     // Check if rocket has gone too far and reset if necessary
     let max_distance = 20.0 * AU; // 20 times the Earth-Sun distance
@@ -196,10 +195,10 @@ fn update_game_screen(state: &mut GameState) {
         log!("Rocket too far, resetting position");
         state.rocket = Rocket::new(); // Reset the rocket to its initial state
     }
-    state.rocket.update_position();
+    //state.rocket.update_position();
 
     // if state.planets.earth.is_within_gravity_range(self.rocket.position()) {
-    state.rocket.apply_gravity(state.planets[1].clone());
+    //state.rocket.apply_gravity(state.planets[1].clone());
     //}
     //log!("Rocket position: {:?}", state.rocket.position());
 
@@ -218,8 +217,11 @@ fn update_game_screen(state: &mut GameState) {
     if gp.start.pressed() {
         state.rocket.is_launching = true;
 
+    }else{
+        state.rocket.is_launching = false;
+ 
     }
-
+/*
     // Update rocket position and apply launch if necessary
     if state.rocket.is_launching {
 
@@ -230,27 +232,25 @@ fn update_game_screen(state: &mut GameState) {
         state.rocket.velocity_x = launch_speed * launch_angle.cos();
         state.rocket.velocity_y = launch_speed * launch_angle.sin();
     }
-
+*/
     for planet in &state.planets {
         let dx = planet.x - state.rocket.x;
         let dy = planet.y - state.rocket.y;
         let distance = (dx * dx + dy * dy).sqrt();
-
         let force = G * planet.mass / (distance * distance + SOFTENING_FACTOR);
         let angle = dy.atan2(dx);
-
-        state.rocket.velocity_x += force * angle.cos() * TIMESTEP;
-        state.rocket.velocity_y += force * angle.sin() * TIMESTEP;
+        //state.rocket.velocity_x += force * angle.cos() * TIMESTEP;
+        //state.rocket.velocity_y += force * angle.sin() * TIMESTEP;
     }
 
-    state.rocket.rotation = state.rocket.velocity_y.atan2(state.rocket.velocity_x);
+    //state.rocket.rotation = state.rocket.velocity_y.atan2(state.rocket.velocity_x);
     state.rocket.update(&state.planets[..], TIMESTEP);
-
-    state.rocket.draw(SCALE);
-
     for planet in &state.planets {
         planet.draw();
     }
+
+    state.rocket.draw(SCALE);
+
 }
 
 fn draw_title_screen(state: &GameState) {
