@@ -68,7 +68,7 @@ impl Planet {
             x_vel: 0.0,
             y_vel: 0.0,
             sprite: "PLANET".to_string(),
-             gravity: 9.8,
+            gravity: 9.8,
 
         }
     }

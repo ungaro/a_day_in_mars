@@ -141,6 +141,8 @@ let rotation_degrees = (self.rotation * 180.0 / PI) as i32;
 
 
 pub fn apply_gravity(&mut self, planet:Planet) {
+
+    
     let dx = planet.x - self.x;
     let dy = planet.y - self.y;
     let distance = (dx * dx + dy * dy).sqrt();
@@ -152,9 +154,11 @@ pub fn apply_gravity(&mut self, planet:Planet) {
 
     // Normalize the direction vector
     let direction = (dx / distance, dy / distance);
-
     // Apply gravitational force with a stronger effect
     let gravity_effect = planet.gravity / (distance * distance); // Inverse-square law for gravity
+    log!("gravity {}",direction.1);
+    log!("gravity {}",gravity_effect);
+
     self.velocity_x += direction.0 * gravity_effect;
     self.velocity_y += direction.1 * gravity_effect;
 }
@@ -162,7 +166,6 @@ pub fn apply_gravity(&mut self, planet:Planet) {
 
 
     pub fn update(&mut self, planets: &[Planet], delta_time: f64) {
-      
         if self.is_launching {
             self.launch_power += LAUNCH_POWER_INCREASE;
             self.launch_power = self.launch_power.min(MAX_LAUNCH_POWER);
@@ -174,8 +177,8 @@ pub fn apply_gravity(&mut self, planet:Planet) {
 
             
             let sun = planets.iter().find(|p| p.sun).unwrap();
-            //let earth = planets.iter().find(|p| p.earth).unwrap();
-            //self.apply_gravity(earth.clone());
+            //let earth = planets.iter().find(|p| p.sun).unwrap();
+            self.apply_gravity(sun.clone());
 
             let dx = sun.x - self.x;
             let dy = sun.y - self.y;
